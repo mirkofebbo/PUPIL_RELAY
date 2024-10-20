@@ -17,12 +17,12 @@ from pupil_labs.lsl_relay import relay
 
 logger = logging.getLogger(__name__)
 
-
 async def main_async(
     device_address: Optional[str] = None,
     outlet_prefix: str = "",
     time_sync_interval: int = 60,
     timeout: int = 10,
+    device_name: Optional[str] = None,  # Add device_name parameter
 ):
     try:
         if device_address:
@@ -33,6 +33,9 @@ async def main_async(
         device_identifier, model, module_serial = await get_device_info_for_outlet(
             device_ip_address, device_port
         )
+        # Use device_name if provided
+        if device_name is not None:
+            device_identifier = device_name
         await relay.Relay.run(
             device_ip=device_ip_address,
             device_port=device_port,
@@ -44,10 +47,10 @@ async def main_async(
         )
     except TimeoutError:
         logger.error(
-            "Make sure your device is connected to the same network.", exc_info=True
+            f"[{device_address}] Make sure your device is connected to the same network.", exc_info=True
         )
     finally:
-        logger.info("The LSL stream was closed.")
+        logger.info(f"[{device_address}] The LSL stream was closed.")
 
 
 class DeviceDiscoverer:
@@ -65,7 +68,8 @@ class DeviceDiscoverer:
             ) as live:
                 await network.wait_for_new_device(timeout_seconds=self.search_timeout)
                 while self.selected_device_info is None:
-                    live.update(print_device_list(network, self.n_reload), refresh=True)
+                    live.update(print_device_list(
+                        network, self.n_reload), refresh=True)
                     self.n_reload += 1
                     user_input = await input_async()
                     self.selected_device_info = evaluate_user_input(
@@ -92,7 +96,7 @@ def get_user_defined_device(device_address: str):
 async def get_device_info_for_outlet(device_ip: str, device_port: int):
     async with Device(device_ip, device_port) as device:
         try:
-            status = await asyncio.wait_for(device.get_status(), 10)
+            status = await asyncio.wait_for(device.get_status(), 20)
         except asyncio.TimeoutError as exc:
             logger.error(
                 "This ip address was not found in the network. "

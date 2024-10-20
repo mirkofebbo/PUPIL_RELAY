@@ -1,65 +1,56 @@
-from pupil_labs.realtime_api.discovery import Network
-from pupil_labs.lsl_relay.cli import main_async, logger_setup
+# main.py
+
 import asyncio
 import logging
 import sys
 import os
-from typing import List, Optional
+
+from pupil_labs.lsl_relay.cli import main_async, logger_setup
 
 # Add the parent directory to the system path to find the pupil_labs package
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+device_configs = [
+    {'address': '192.168.1.244:8080', 'name': 'A'},
+    {'address': '192.168.1.243:8080', 'name': 'B'},
+]
 
 async def main():
+    """Main function to run the LSL relay for multiple devices."""
     # Set up logging
     log_file_name = 'lsl_relay.log'
     logger_setup(log_file_name)
 
     # Define default parameters
-    device_addresses = ['192.168.0.201:8080',  # F
-                        '192.168.0.13:8080',  # E
-                        '192.168.0.240:8080',  # C
-                        '192.168.0.177:8080',  # L
-                        '192.168.0.230:8080',  # K
-                        '192.168.0.42:8080'
-                        ]   # Set to list of 'IP:port' strings if you know the device addresses
     outlet_prefix = 'pupil_labs'
     time_sync_interval = 60  # Interval in seconds for time-sync events
     timeout = 30  # Time limit in seconds to try to connect to the devices
 
-    # Discover devices if device_addresses is not provided
-    if device_addresses is None:
-        device_addresses = await discover_devices(timeout)
-
     # Run relays for all devices
-    relay_tasks = [
-        asyncio.create_task(
+    relay_tasks = []
+    for config in device_configs:
+        device_address = config['address']
+        device_name = config['name']
+        print(f"Starting relay for device {device_name} at {device_address}")
+        task = asyncio.create_task(
             main_async(
                 device_address=device_address,
                 outlet_prefix=outlet_prefix,
                 time_sync_interval=time_sync_interval,
                 timeout=timeout,
+                device_name=device_name,  # Pass device_name
             )
         )
-        for device_address in device_addresses
-    ]
+        relay_tasks.append(task)
 
     # Wait for all relays to complete (they run indefinitely)
-    await asyncio.gather(*relay_tasks)
+    results = await asyncio.gather(*relay_tasks, return_exceptions=True)
 
-
-async def discover_devices(timeout: int) -> List[str]:
-    device_addresses = []
-    async with Network() as network:
-        print("Discovering devices...")
-        await network.wait_for_new_device(timeout_seconds=timeout)
-        for device_info in network.devices:
-            ip = device_info.addresses[0]
-            port = device_info.port
-            device_address = f"{ip}:{port}"
-            device_addresses.append(device_address)
-            print(f"Found device at {device_address}")
-    return device_addresses
+    # Check for exceptions
+    for config, result in zip(device_configs, results):
+        device_name = config['name']
+        if isinstance(result, Exception):
+            logging.error(f"[{device_name}] An error occurred in a relay task: {result}")
 
 if __name__ == '__main__':
     try:

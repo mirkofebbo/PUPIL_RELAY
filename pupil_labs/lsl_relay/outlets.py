@@ -34,7 +34,7 @@ class PupilCompanionOutlet:
         outlet_name_prefix: str,
         outlet_uuid: str,
         acquisition_info: Dict[str, str],
-        device_identifier: str,  # Add this parameter
+        device_identifier: str, 
     ):
         self._outlet_uuid = outlet_uuid
         self._channels = channel_func()
@@ -45,7 +45,7 @@ class PupilCompanionOutlet:
             outlet_format,
             outlet_name_prefix,
             acquisition_info,
-            device_identifier,  # Pass it to pi_create_outlet
+            device_identifier,  
         )
 
     def push_sample_to_outlet(self, sample: Sample):
