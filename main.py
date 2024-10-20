@@ -10,11 +10,23 @@ from pupil_labs.lsl_relay.cli import main_async, logger_setup
 # Add the parent directory to the system path to find the pupil_labs package
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-device_configs = [
-    {'address': '192.168.1.244:8080', 'name': 'A'},
-    {'address': '192.168.1.243:8080', 'name': 'B'},
-]
+# device_configs = [
+#     {'address': '192.168.1.244:8080', 'name': 'A'},
+#     {'address': '192.168.1.243:8080', 'name': 'B'},
+# ]
 
+# SLATE TEST
+device_configs = [
+    {'address': '192.168.8.180:8080', 'name': 'A'},
+    {'address': '192.168.8.160:8080', 'name': 'B'},
+    {'address': '192.168.8.227:8080', 'name': 'C'},
+    {'address': '192.168.8.244:8080', 'name': 'D'},
+    {'address': '192.168.8.125:8080', 'name': 'E'},
+    {'address': '192.168.8.224:8080', 'name': 'F'},
+    {'address': '192.168.8.111:8080', 'name': 'G'},
+    {'address': '192.168.8.217:8080', 'name': 'H'},
+
+]
 async def main():
     """Main function to run the LSL relay for multiple devices."""
     # Set up logging
