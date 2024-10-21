@@ -17,6 +17,7 @@ from pupil_labs.lsl_relay import relay
 
 logger = logging.getLogger(__name__)
 
+
 async def main_async(
     device_address: Optional[str] = None,
     outlet_prefix: str = "",
@@ -26,7 +27,8 @@ async def main_async(
 ):
     try:
         if device_address:
-            device_ip_address, device_port = get_user_defined_device(device_address)
+            device_ip_address, device_port = get_user_defined_device(
+                device_address)
         else:
             discoverer = DeviceDiscoverer(timeout)
             device_ip_address, device_port = await discoverer.get_device_from_list()
@@ -180,17 +182,17 @@ def print_device_list(network: Network, n_reload: int):
 
 
 def logger_setup(file_name: str, debug_level: Union[str, int] = logging.DEBUG):
-    logging.basicConfig(
-        level=debug_level,
-        filename=file_name,
-        format="%(asctime)s:%(name)s:%(levelname)s:%(message)s",
-    )
-    # set up console logging
-    stream_handler = RichHandler(level="INFO")
-    formatter = logging.Formatter("%(message)s")
-    stream_handler.setFormatter(formatter)
-    logging.getLogger().addHandler(stream_handler)
-    logging.info(f"Saving logs to {file_name}")
+    if not logging.getLogger().hasHandlers():
+        logging.basicConfig(
+            level=debug_level,
+            filename=file_name,
+            format="%(asctime)s:%(levelname)s:%(message)s",
+        )
+        # Set up console logging
+        stream_handler = RichHandler(level="INFO")
+        stream_handler.setFormatter(logging.Formatter("%(message)s"))
+        logging.getLogger().addHandler(stream_handler)
+        logging.info(f"Saving logs to {file_name}")
 
 
 def epoch_is(year: int, month: int, day: int) -> bool:
