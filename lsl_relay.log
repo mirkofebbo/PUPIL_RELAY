@@ -2,3 +2,11 @@
 task: <Task pending name='Task-7413' coro=<Queue.get() done, defined at /opt/homebrew/Cellar/python@3.11/3.11.10/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/queues.py:149> wait_for=<Future cancelled> cb=[_release_waiter(<Future pendi...ask_wakeup()]>)() at /opt/homebrew/Cellar/python@3.11/3.11.10/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py:431]>
 2024-10-21 20:34:02,087:ERROR:Task was destroyed but it is pending!
 task: <Task cancelling name='Task-8' coro=<Relay.publish_gaze_sample() running at /Users/mirkofebb/Desktop/NEUROLIVE/PUPIL_RELAY/pupil_labs/lsl_relay/relay.py:106> wait_for=<Future pending cb=[Task.task_wakeup()]> cb=[gather.<locals>._done_callback() at /opt/homebrew/Cellar/python@3.11/3.11.10/Frameworks/Python.framework/Versions/3.11/lib/python3.11/asyncio/tasks.py:764]>
+
+
+This is fantastic ! ! look we have this side pretty solid no? now how about the start/stop lsl stream to be one button, without popup, and maybe we also add a checkbox to start multiple stream at the same time? 
+
+
+
+
+

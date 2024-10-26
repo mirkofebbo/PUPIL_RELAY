@@ -235,7 +235,8 @@ class DataReceiver:
                 return
             self.clock_offset_ns = round(
                 estimated_offset.time_offset_ms.mean * 1e6)
-            logger.info(f"[{self.device_name}] Estimated clock offset: {self.clock_offset_ns:_} ns")
+            logger.info(
+                f"[{self.device_name}] Estimated clock offset: {self.clock_offset_ns:_} ns")
 
     async def cleanup(self):
         if self.notifier is not None:

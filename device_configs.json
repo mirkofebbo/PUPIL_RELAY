@@ -1,0 +1,18 @@
+[
+    {
+        "ip": "192.168.1.104",
+        "port": 8080,
+        "name": "A",
+        "device_id": "ec2849d05560b433",
+        "available": true,
+        "source": "discovery"
+    },
+    {
+        "ip": "192.168.1.103",
+        "port": 8080,
+        "name": "B",
+        "device_id": "cf631ddc673a7d1d",
+        "available": true,
+        "source": "discovery"
+    }
+]

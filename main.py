@@ -9,7 +9,7 @@ from pupil_labs.lsl_relay.cli import main_async, logger_setup
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 device_configs = [
-    # {'address': '158.223.44.142:8080', 'name': 'A'},
+    {'address': '158.223.44.142:8080', 'name': 'A'},
     {'address': '192.168.1.103:8080', 'name': 'B'},
 ]
 
