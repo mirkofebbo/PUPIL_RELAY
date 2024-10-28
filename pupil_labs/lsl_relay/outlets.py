@@ -123,7 +123,7 @@ def pi_create_outlet(
     outlet_format: LSLChannelFormatConstant,
     outlet_name_prefix: str,
     acquisition_info: Dict[str, str],
-    device_identifier: str,  # Add this parameter
+    device_identifier: str,  
 ):
     stream_info = pi_streaminfo(
         outlet_uuid,
@@ -132,7 +132,7 @@ def pi_create_outlet(
         outlet_format,
         outlet_name_prefix,
         acquisition_info,
-        device_identifier,  # Pass it to pi_streaminfo
+        device_identifier, 
     )
     return lsl.StreamOutlet(stream_info)
 
@@ -144,7 +144,7 @@ def pi_streaminfo(
     channel_format: LSLChannelFormatConstant,
     outlet_name_prefix: str,
     acquisition_info: Dict[str, str],
-    device_identifier: str,  # Add this parameter
+    device_identifier: str,  
 ):
     stream_info = lsl.StreamInfo(
         # Include device identifier

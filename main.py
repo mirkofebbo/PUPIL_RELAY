@@ -15,7 +15,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 #     {'address': '192.168.1.243:8080', 'name': 'B'},
 # ]
 
-# SLATE TEST
+# TEST
 device_configs = [
     {'address': '192.168.8.180:8080', 'name': 'A'},
     {'address': '192.168.8.160:8080', 'name': 'B'},
@@ -25,8 +25,8 @@ device_configs = [
     {'address': '192.168.8.224:8080', 'name': 'F'},
     {'address': '192.168.8.111:8080', 'name': 'G'},
     {'address': '192.168.8.217:8080', 'name': 'H'},
-
 ]
+
 async def main():
     """Main function to run the LSL relay for multiple devices."""
     # Set up logging
@@ -50,7 +50,7 @@ async def main():
                 outlet_prefix=outlet_prefix,
                 time_sync_interval=time_sync_interval,
                 timeout=timeout,
-                device_name=device_name,  # Pass device_name
+                device_name=device_name,  
             )
         )
         relay_tasks.append(task)

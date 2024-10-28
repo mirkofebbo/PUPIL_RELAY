@@ -22,7 +22,7 @@ async def main_async(
     outlet_prefix: str = "",
     time_sync_interval: int = 60,
     timeout: int = 10,
-    device_name: Optional[str] = None,  # Add device_name parameter
+    device_name: Optional[str] = None, 
 ):
     try:
         if device_address:
@@ -36,6 +36,7 @@ async def main_async(
         # Use device_name if provided
         if device_name is not None:
             device_identifier = device_name
+            
         await relay.Relay.run(
             device_ip=device_ip_address,
             device_port=device_port,
