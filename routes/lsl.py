@@ -17,16 +17,21 @@ from pupil_labs.realtime_api.discovery import Network
 
 lsl_blueprint = Blueprint('lsl', __name__)
 
+
+logger = logging.getLogger(__name__)
 # Remove the local relay_tasks definition
 # relay_tasks = {}
 
-#--------------------------------------------------------------------------------
-# DISCOVER DEVICES 
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
+# DISCOVER DEVICES
+# --------------------------------------------------------------------------------
+
+
 @lsl_blueprint.route('/get_devices', methods=['GET'])
 def get_devices_route():
     devices = asyncio.run(get_devices())
     return jsonify({'devices': devices})
+
 
 @lsl_blueprint.route('/discover_new_devices', methods=['GET'])
 def discover_new_devices_route():
@@ -35,9 +40,9 @@ def discover_new_devices_route():
     update_device_configs(new_devices)
     return jsonify({'new_devices': new_devices})
 
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # START LSL RELAY
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 @lsl_blueprint.route('/start_relay', methods=['POST'])
 def start_relay():
     data = request.get_json()
@@ -63,14 +68,15 @@ def start_relay():
         return jsonify({'message': f'Relay already running for device {device_name}'}), 200
 
     # Start the relay in a new thread to avoid blocking
-    thread = Thread(target=start_relay_task, args=(device_ip, device_port, device_name, device_id))
+    thread = Thread(target=start_relay_task, args=(
+        device_ip, device_port, device_name, device_id))
     thread.start()
 
     return jsonify({'message': f'Started relay for device {device_name}'})
 
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 # STOP LSL RELAY
-#--------------------------------------------------------------------------------
+# --------------------------------------------------------------------------------
 @lsl_blueprint.route('/stop_relay', methods=['POST'])
 def stop_relay():
     data = request.get_json()
@@ -83,17 +89,43 @@ def stop_relay():
     if device_id not in relay_tasks:
         return jsonify({'message': f'No relay running for device {device_name}'}), 404
 
-    # Cancel the relay task
-    relay_info = relay_tasks[device_id]
+    relay_info = relay_tasks.get(device_id)
     loop = relay_info['loop']
     task = relay_info['task']
 
-    def cancel_task():
-        task.cancel()
+    def cancel_task_and_cleanup():
+        if not task.cancelled():
+            task.cancel()
+            try:
+                asyncio.ensure_future(task)  # Safely handle awaiting task cancellation
+            except asyncio.CancelledError:
+                logger.info(f"Task for {device_name} was successfully cancelled.")
+            except Exception as e:
+                logger.error(f"Error while stopping task for {device_name}: {e}")
+            finally:
+                if device_id in relay_tasks:
+                    del relay_tasks[device_id]
 
-    loop.call_soon_threadsafe(cancel_task)
+    loop.call_soon_threadsafe(cancel_task_and_cleanup)
 
     return jsonify({'message': f'Stopped relay for device {device_name}'})
+
+# --------------------------------------------------------------------------------
+# STREAM STATUS
+# --------------------------------------------------------------------------------
+@lsl_blueprint.route('/get_stream_status', methods=['GET'])
+def get_stream_status():
+    # Create a dictionary to represent the current status of all streaming tasks
+    status = {}
+    for device_id, task_info in relay_tasks.items():
+        is_streaming = not task_info['task'].cancelled()  # Check if the task is still active
+        status[device_id] = {
+            'device_name': task_info.get('device_name', 'Unknown'),
+            'is_streaming': is_streaming,
+        }
+    return jsonify({'status': status})
+
+
 
 @lsl_blueprint.route('/update_device_name', methods=['POST'])
 def update_device_name():
