@@ -9,6 +9,7 @@ from helper.api_helper import (
     relay_tasks,  # Import relay_tasks
     discover_new_devices,
     update_device_configs,
+    update_device_status,
     load_device_configs,
 )
 
@@ -97,14 +98,14 @@ def stop_relay():
         if not task.cancelled():
             task.cancel()
             try:
-                asyncio.ensure_future(task)  # Safely handle awaiting task cancellation
-            except asyncio.CancelledError:
-                logger.info(f"Task for {device_name} was successfully cancelled.")
+                asyncio.ensure_future(task)
             except Exception as e:
-                logger.error(f"Error while stopping task for {device_name}: {e}")
+                logging.error(f"Error while stopping task for {device_name}: {e}")
             finally:
                 if device_id in relay_tasks:
                     del relay_tasks[device_id]
+                # Update device 'connected' and 'lsl_streaming' statuses
+                update_device_status(device_id, connected=False, lsl_streaming=False)
 
     loop.call_soon_threadsafe(cancel_task_and_cleanup)
 
@@ -145,3 +146,39 @@ def update_device_name():
         return jsonify({'message': f'Device name updated to {new_name}'})
     else:
         return jsonify({'error': 'Device not found'}), 404
+
+
+
+@lsl_blueprint.route('/start_recording', methods=['POST'])
+def start_recording():
+    data = request.get_json()
+    device_id = data.get('device_id')
+
+    if not device_id:
+        return jsonify({'error': 'device_id is required'}), 400
+
+    if device_id not in relay_tasks or relay_tasks[device_id].get('device') is None:
+        return jsonify({'error': f'No valid device instance found for {device_id}'}), 404
+
+    device = relay_tasks[device_id]['device']
+
+    async def initiate_recording(device):
+        try:
+            recording_id = await device.recording_start()
+            relay_tasks[device_id]['recording_id'] = recording_id
+            logger.info(f"Recording started on device {device_id} with ID {recording_id}")
+            # Update device 'recording' status
+            update_device_status(device_id, recording=True)
+            return {'message': f'Recording started on device {device_id}', 'recording_id': recording_id}
+        except Exception as e:
+            logger.error(f"Error starting recording on device {device_id}: {e}")
+            return {'error': str(e)}
+
+    try:
+        result = asyncio.run(initiate_recording(device))
+        if 'error' in result:
+            return jsonify(result), 500
+        return jsonify(result)
+    except Exception as e:
+        logger.error(f"Error running start_recording: {e}")
+        return jsonify({'error': str(e)}), 500

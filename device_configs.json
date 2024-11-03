@@ -5,14 +5,24 @@
         "name": "A",
         "device_id": "ec2849d05560b433",
         "available": true,
-        "source": "discovery"
+        "battery_level": 79,
+        "glasses_serial": null,
+        "world_camera_serial": "default",
+        "connected": false,
+        "recording": false,
+        "lsl_streaming": false
     },
     {
-        "ip": "192.168.1.133",
+        "ip": "192.168.1.159",
         "port": 8080,
         "name": "B",
         "device_id": "cf631ddc673a7d1d",
         "available": true,
-        "source": "discovery"
+        "battery_level": 50,
+        "glasses_serial": null,
+        "world_camera_serial": "default",
+        "connected": false,
+        "lsl_streaming": false,
+        "recording": false
     }
 ]

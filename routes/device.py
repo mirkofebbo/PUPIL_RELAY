@@ -8,6 +8,7 @@ from helper.api_helper import (
     is_device_available,
     parse_device_name,
 )
+
 import json
 
 device_blueprint = Blueprint('device', __name__)

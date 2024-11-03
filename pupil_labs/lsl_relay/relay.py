@@ -1,6 +1,8 @@
 import asyncio
 import logging
 import uuid
+import json
+import threading
 from typing import Iterable, List, NoReturn, Optional
 
 from pupil_labs.realtime_api import Device, StatusUpdateNotifier, receive_gaze_data
@@ -9,11 +11,12 @@ from pupil_labs.realtime_api.simple.models import GazeDataType
 from pupil_labs.realtime_api.time_echo import TimeOffsetEstimator
 
 from pupil_labs.lsl_relay import outlets
+from helper.config_utils import load_device_configs, save_device_configs
 
 logger = logging.getLogger(__name__)
 logging.getLogger("pupil_labs.realtime_api.time_echo").setLevel("WARNING")
 
-# Inside the Relay class in relay.py
+config_lock = threading.Lock()
 
 
 class Relay:
@@ -178,22 +181,55 @@ class Relay:
 
 
 class DataReceiver:
-    def __init__(self, device_ip: str, device_port: int, device_name: str):
+    def __init__(self, device_ip: str, device_port: int, device_id: str, config_updater: None):
         self.device_ip = device_ip
         self.device_port = device_port
-        self.device_name = device_name
+        self.device_id = device_id
         self.notifier: Optional[StatusUpdateNotifier] = None
         self.gaze_sensor_url: Optional[str] = None
         self.event_queue: asyncio.Queue[EventAdapter] = asyncio.Queue()
         self.clock_offset_ns: int = 0
+        self.config_updater = config_updater
+
 
     async def on_update(self, component: Component):
+        # Handle Sensor updates
         if isinstance(component, Sensor):
             if component.sensor == "gaze" and component.conn_type == "DIRECT":
                 self.gaze_sensor_url = component.url
+
+        # Handle Phone updates
+        elif component.model == "Phone":
+            battery_level = component.data.get('battery_level')
+            battery_state = component.data.get('battery_state')
+            self.update_device_status_in_json(
+                battery_level=battery_level,
+                battery_state=battery_state
+            )
+
+        # Handle Hardware updates
+        elif component.model == "Hardware":
+            glasses_serial = component.data.get('glasses_serial')
+            world_camera_serial = component.data.get('world_camera_serial')
+            self.update_device_status_in_json(
+                glasses_serial=glasses_serial,
+                world_camera_serial=world_camera_serial
+            )
+
+        # Handle other updates if needed
         elif isinstance(component, Event):
             adapted_event = EventAdapter(component, self.clock_offset_ns)
             await self.event_queue.put(adapted_event)
+
+    def update_device_status_in_json(self, **kwargs):
+        with config_lock:
+            existing_devices_dict = load_device_configs()
+            if self.device_id in existing_devices_dict:
+                device = existing_devices_dict[self.device_id]
+                for key, value in kwargs.items():
+                    if value is not None:
+                        device[key] = value
+                save_device_configs(existing_devices_dict)
 
     async def make_status_update_notifier(self):
         async with Device(self.device_ip, self.device_port) as device:

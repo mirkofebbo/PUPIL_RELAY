@@ -23,7 +23,8 @@ async def main_async(
     outlet_prefix: str = "",
     time_sync_interval: int = 60,
     timeout: int = 10,
-    device_name: Optional[str] = None,  # Add device_name parameter
+    device_name: Optional[str] = None, 
+    config_updater=None,
 ):
     try:
         if device_address:
@@ -46,6 +47,7 @@ async def main_async(
             model=model,
             module_serial=module_serial,
             time_sync_interval=time_sync_interval,
+            config_updater=config_updater,
         )
     except TimeoutError:
         logger.error(
@@ -101,11 +103,13 @@ async def get_device_info_for_outlet(device_ip: str, device_port: int):
             status = await asyncio.wait_for(device.get_status(), 20)
         except asyncio.TimeoutError as exc:
             logger.error(
-                "This ip address was not found in the network. "
+                "This IP address was not found in the network. "
                 "Please check for typos and make sure the device "
                 "is connected to the same network."
             )
             raise exc
+
+        device_id = status.phone.device_id
 
         if hasattr(status.hardware, "module_serial") and status.hardware.module_serial:
             module_serial = status.hardware.module_serial
@@ -122,7 +126,7 @@ async def get_device_info_for_outlet(device_ip: str, device_port: int):
         else:
             model = "Unknown"
 
-        return status.phone.device_id, model, module_serial
+        return device_id, model, module_serial
 
 
 async def input_async():
