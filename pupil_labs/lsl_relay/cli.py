@@ -33,16 +33,16 @@ async def main_async(
         else:
             discoverer = DeviceDiscoverer(timeout)
             device_ip_address, device_port = await discoverer.get_device_from_list()
-        device_identifier, model, module_serial = await get_device_info_for_outlet(
+        device_id, model, module_serial = await get_device_info_for_outlet(
             device_ip_address, device_port
         )
         # Use device_name if provided
         if device_name is not None:
-            device_identifier = device_name
+            device_id = device_name
         await relay.Relay.run(
             device_ip=device_ip_address,
             device_port=device_port,
-            device_identifier=device_identifier,
+            device_id=device_id,
             outlet_prefix=outlet_prefix,
             model=model,
             module_serial=module_serial,

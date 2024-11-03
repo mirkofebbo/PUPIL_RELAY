@@ -25,19 +25,20 @@ class Relay:
         cls,
         device_ip: str,
         device_port: int,
-        device_identifier: str,
+        device_id: str,
         outlet_prefix: str,
         model: str,
         module_serial: str,
         time_sync_interval: int,
+        config_updater=None, 
     ):
-        receiver = DataReceiver(device_ip, device_port, device_identifier)
+        receiver = DataReceiver(device_ip, device_port, device_id, config_updater)
         await receiver.estimate_clock_offset()
         relay = cls(
             device_ip,
             device_port,
             receiver,
-            device_identifier,
+            device_id,
             outlet_prefix,
             model,
             module_serial,
@@ -51,19 +52,19 @@ class Relay:
         device_ip: str,
         device_port: int,
         receiver: "DataReceiver",
-        device_identifier: str,
+        device_id: str,
         outlet_prefix: str,
         model: str,
         module_serial: str,
         time_sync_interval: int,
     ):
         self.device_ip = device_ip
+        self.device_id = device_id
         self.device_port = device_port
-        self.device_name = device_identifier
         self.receiver = receiver
         self.session_id = str(uuid.uuid4())
         self.gaze_outlet = outlets.PupilCompanionGazeOutlet(
-            device_id=device_identifier,
+            device_id=device_id,
             outlet_prefix=outlet_prefix,
             model=model,
             module_serial=module_serial,
@@ -71,7 +72,7 @@ class Relay:
             clock_offset_ns=self.receiver.clock_offset_ns,
         )
         self.event_outlet = outlets.PupilCompanionEventOutlet(
-            device_id=device_identifier,
+            device_id=device_id,
             outlet_prefix=outlet_prefix,
             model=model,
             module_serial=module_serial,
@@ -99,7 +100,7 @@ class Relay:
                             f"Dropping unknown gaze data type: {gaze}")
             else:
                 logger.debug(
-                    f"[{self.device_name}]The gaze sensor was not yet identified.")
+                    f"[{self.device_id}]The gaze sensor was not yet identified.")
                 await asyncio.sleep(1)
 
     async def publish_gaze_sample(self, timeout: float):
@@ -113,7 +114,7 @@ class Relay:
             except asyncio.TimeoutError:
                 missing_sample_duration += timeout
                 logger.warning(
-                    f"[{self.device_name}] No gaze sample received for {missing_sample_duration} seconds."
+                    f"[{self.device_id}] No gaze sample received for {missing_sample_duration} seconds."
                 )
 
     async def publish_event_from_queue(self):
@@ -222,6 +223,8 @@ class DataReceiver:
             await self.event_queue.put(adapted_event)
 
     def update_device_status_in_json(self, **kwargs):
+        if self.config_updater:
+            self.config_updater(self.device_id, **kwargs)
         with config_lock:
             existing_devices_dict = load_device_configs()
             if self.device_id in existing_devices_dict:
@@ -265,14 +268,14 @@ class DataReceiver:
             estimated_offset = await time_offset_estimator.estimate()
             if estimated_offset is None:
                 logger.warning(
-                    f"[{self.device_name}] Estimating clock offset failed. Relying on less accurate NTP time "
+                    f"[{self.device_id}] Estimating clock offset failed. Relying on less accurate NTP time "
                     "sync."
                 )
                 return
             self.clock_offset_ns = round(
                 estimated_offset.time_offset_ms.mean * 1e6)
             logger.info(
-                f"[{self.device_name}] Estimated clock offset: {self.clock_offset_ns:_} ns")
+                f"[{self.device_id}] Estimated clock offset: {self.clock_offset_ns:_} ns")
 
     async def cleanup(self):
         if self.notifier is not None:

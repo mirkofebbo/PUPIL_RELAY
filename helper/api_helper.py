@@ -6,6 +6,7 @@ import threading
 
 from pupil_labs.realtime_api.discovery import Network
 from pupil_labs.realtime_api import Device, Network
+from pupil_labs.realtime_api.discovery import discover_devices
 
 # api_helper.py
 from helper.config_utils import load_device_configs, save_device_configs
@@ -43,7 +44,7 @@ async def is_device_available(ip, port):
 async def get_devices():
     devices = []
     existing_devices_dict = load_device_configs()
-    for device_id, device in existing_devƒices_dict.items():
+    for device_id, device in existing_devices_dict.items():
         ip = device['ip']
         port = device['port']
         name = device['name']
@@ -71,21 +72,20 @@ async def get_devices():
 
 async def discover_new_devices():
     devices = []
-    async with Network() as network:
-        print("Discovering devices...")
-        await network.wait_for_new_device(timeout_seconds=5)
-        if not network.devices:
-            print("No new devices found.")
-            return devices
-        print(f"Found {len(network.devices)} new device(s).")
-        for device_info in network.devices:
+    print("Discovering devices...")
+    try:
+        # Use the discover_devices async generator
+        async for device_info in discover_devices(timeout_seconds=5):
             ip = device_info.addresses[0]
             port = device_info.port
             full_name = device_info.name
-            device_name, device_id = parse_device_name(full_name)
+            print(f"Discovered device with full_name: {full_name}")
+
             # Create a Device instance to get more metadata
             async with Device.from_discovered_device(device_info) as device:
                 status = await device.get_status()
+                device_id = status.phone.device_id
+                device_name = status.phone.name or full_name
                 battery_level = status.phone.battery_level
                 glasses_serial = status.hardware.glasses_serial
                 world_camera_serial = status.hardware.world_camera_serial
@@ -96,7 +96,6 @@ async def discover_new_devices():
                     'name': device_name,
                     'device_id': device_id,
                     'available': True,
-                    # Removed 'source'
                     'battery_level': battery_level,
                     'glasses_serial': glasses_serial,
                     'world_camera_serial': world_camera_serial,
@@ -104,6 +103,10 @@ async def discover_new_devices():
                     'lsl_streaming': False,
                     'recording': False,
                 })
+        if not devices:
+            print("No new devices found.")
+    except Exception as e:
+        print(f"Error during device discovery: {e}")
     return devices
 
 # --------------------------------------------------------------------------------
@@ -117,63 +120,71 @@ def start_relay_task(device_ip, device_port, device_name, device_id):
     log_file_name = f'lsl_relay_{device_name}.log'
     logger_setup(log_file_name)
 
-    # Run the relay asynchronously
+    # Create a new event loop for this thread
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
 
-    # Create a Device instance to store in relay_tasks
-    async def create_device_instance():
+    # Keep track of the task
+    relay_tasks[device_id] = {
+        'loop': loop,
+        'task': None,  # Will set later
+        'device': None,  # Will set later
+        'device_name': device_name,
+    }
+
+    async def setup_device_and_relay():
+        asyncio.set_event_loop(loop)
         async with Network() as network:
             await network.wait_for_new_device(timeout_seconds=5)
             matching_device_info = next(
                 (d for d in network.devices if device_ip in d.addresses), None)
             if matching_device_info:
                 device = await Device.from_discovered_device(matching_device_info)
-                return device
-            return None
+            else:
+                logging.error(f"Could not find device info for {device_name}")
+                return
 
-    device = loop.run_until_complete(create_device_instance())
+            # Update device 'connected' and 'lsl_streaming' statuses
+            update_device_status(device_id, connected=True, lsl_streaming=True)
 
-    if not device:
-        logging.error(f"Could not create device instance for {device_name}")
-        return
+            # Store the device instance
+            relay_tasks[device_id]['device'] = device
 
-    # Update device 'connected' and 'lsl_streaming' statuses
-    update_device_status(device_id, connected=True, lsl_streaming=True)
+            # Run the relay task
+            relay_task = asyncio.create_task(main_async(
+                device_address=f"{device_ip}:{device_port}",
+                outlet_prefix='pupil_labs',
+                time_sync_interval=60,
+                timeout=10,
+                device_name=device_name,
+                config_updater=update_device_status,
+            ))
 
-    # Keep track of the task
-    relay_tasks[device_id] = {
-        'loop': loop,
-        'task': None,  # We will set this later
-        'device': device,
-        'device_name': device_name,
-    }
+            relay_tasks[device_id]['task'] = relay_task
 
-    # Run the relay task
-    relay_task = loop.create_task(main_async(
-        device_address=f"{device_ip}:{device_port}",
-        outlet_prefix='pupil_labs',
-        time_sync_interval=60,
-        timeout=10,
-        device_name=device_name,
-        config_updater=update_device_status,
-    ))
+            # Wait for relay task to finish
+            await relay_task
 
-    relay_tasks[device_id]['task'] = relay_task
+    # Start the event loop in a separate thread
+    def run_loop():
+        asyncio.set_event_loop(loop)
+        loop.create_task(setup_device_and_relay())
+        try:
+            loop.run_forever()
+        except Exception as e:
+            logging.error(f"Error in event loop: {e}")
+        finally:
+            # Clean up after loop stops
+            loop.close()
+            if device_id in relay_tasks:
+                del relay_tasks[device_id]
+            update_device_status(
+                device_id, connected=False, lsl_streaming=False)
+            logger.info(f"[{device_name}] Event loop stopped and cleaned up.")
 
-    # Run the event loop
-    try:
-        loop.run_until_complete(relay_task)
-    except asyncio.CancelledError:
-        logging.info(f"[{device_name}] Relay task was cancelled.")
-    except Exception as e:
-        logging.error(f"[{device_name}] Relay task encountered an error: {e}")
-    finally:
-        # Clean up
-        loop.close()
-        del relay_tasks[device_id]
-        # Update device 'connected' and 'lsl_streaming' statuses
-        update_device_status(device_id, connected=False, lsl_streaming=False)
+    thread = threading.Thread(target=run_loop)
+    thread.start()
+
+    relay_tasks[device_id]['thread'] = thread
 
 # --------------------------------------------------------------------------------
 # OTHER UTILITIES
