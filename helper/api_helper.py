@@ -5,6 +5,8 @@ import os
 import threading
 
 from pupil_labs.realtime_api.discovery import Network
+from pupil_labs.realtime_api.discovery import discover_devices
+
 from pupil_labs.realtime_api import Device, Network
 
 # api_helper.py
@@ -17,7 +19,6 @@ relay_tasks = {}
 # --------------------------------------------------------------------------------
 # DEVICE DISCOVERY
 # --------------------------------------------------------------------------------
-
 
 def update_device_status(device_id, **kwargs):
     with config_lock:
@@ -43,7 +44,7 @@ async def is_device_available(ip, port):
 async def get_devices():
     devices = []
     existing_devices_dict = load_device_configs()
-    for device_id, device in existing_devƒices_dict.items():
+    for device_id, device in existing_devices_dict.items():
         ip = device['ip']
         port = device['port']
         name = device['name']
@@ -64,6 +65,7 @@ async def get_devices():
             'lsl_streaming': device.get('lsl_streaming', False),
             'recording': device.get('recording', False),
         })
+        print(f"Device {name} is available: {is_available}")
     # Save updated configurations
     save_device_configs(existing_devices_dict)
     return devices
@@ -109,8 +111,6 @@ async def discover_new_devices():
 # --------------------------------------------------------------------------------
 # RELAY MANAGEMENT
 # --------------------------------------------------------------------------------
-
-
 def start_relay_task(device_ip, device_port, device_name, device_id):
     from pupil_labs.lsl_relay.cli import main_async, logger_setup
     # Set up logging for the relay
@@ -178,8 +178,6 @@ def start_relay_task(device_ip, device_port, device_name, device_id):
 # --------------------------------------------------------------------------------
 # OTHER UTILITIES
 # --------------------------------------------------------------------------------
-
-
 def parse_device_name(full_name: str):
     name_parts = full_name.split(':')
     if len(name_parts) >= 3:

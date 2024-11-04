@@ -24,6 +24,7 @@ def get_devices_route():
 @device_blueprint.route('/discover_new_devices', methods=['GET'])
 def discover_new_devices_route():
     new_devices = asyncio.run(discover_new_devices())
+    print(new_devices)
     # Update configurations
     update_device_configs(new_devices)
     return jsonify({'new_devices': new_devices})

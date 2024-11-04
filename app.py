@@ -16,5 +16,5 @@ def home():
 
 if __name__ == '__main__':
     # Perform initial device check before starting the app
-    asyncio.run(get_devices())
+    # asyncio.run(get_devices())
     app.run(debug=True, port=5000)
