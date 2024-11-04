@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pupil_labs.realtime_api import Device
 from pupil_labs.realtime_api.time_echo import TimeOffsetEstimator
 from utils.utils import read_json_file, write_json_file
+from typing import Optional
 
 app = FastAPI()
 JSON_FILE_PATH = 'devices.json'
@@ -30,9 +31,9 @@ class DeviceModel(BaseModel):
     name: str
     device_id: str
     available: bool
-    battery_level: int = None
-    glasses_serial: str = None
-    world_camera_serial: str = None
+    battery_level: Optional[int] = None
+    glasses_serial: Optional[str] = None
+    world_camera_serial: Optional[str] = None
     connected: bool = False
     lsl_streaming: bool = False
     recording: bool = False

@@ -19,15 +19,16 @@ async def discover_and_log_devices():
         device_data = {
             "ip": device_ip,
             "port": device_port,
-            "name": device_id,  # You can customize this
+            "name": device_id,
             "device_id": device_id,
             "available": True,
-            "connected": False,
-            "lsl_streaming": False,
-            "recording": False,
             "battery_level": None,
             "glasses_serial": None,
             "world_camera_serial": None,
+            "connected": False,
+            "lsl_streaming": False,
+            "recording": False,
+            "error_message": ""
         }
 
         await update_devices_json(device_data)

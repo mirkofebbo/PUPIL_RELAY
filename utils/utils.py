@@ -1,23 +1,25 @@
-# utils.py
-
-import json
-import os
+# utils/utils.py
+import threading
 import asyncio
+import json
 
-file_lock = asyncio.Lock()
+file_lock = threading.Lock()
 
 async def read_json_file(file_path):
-    """Asynchronously read data from a JSON file."""
-    async with file_lock:
-        if os.path.exists(file_path):
+    def read_file():
+        with file_lock:
             with open(file_path, 'r') as f:
                 data = json.load(f)
-        else:
-            data = []
-    return data
+        return data
+
+    # Run the blocking I/O operation in a thread
+    return await asyncio.to_thread(read_file)
 
 async def write_json_file(file_path, data):
-    """Asynchronously write data to a JSON file."""
-    async with file_lock:
-        with open(file_path, 'w') as f:
-            json.dump(data, f, indent=4)
+    def write_file():
+        with file_lock:
+            with open(file_path, 'w') as f:
+                json.dump(data, f, indent=4)
+
+    # Run the blocking I/O operation in a thread
+    await asyncio.to_thread(write_file)
