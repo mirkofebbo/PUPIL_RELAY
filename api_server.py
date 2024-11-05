@@ -94,8 +94,7 @@ async def start_recordings(request: DeviceActionRequest, background_tasks: Backg
         d for d in devices if d["device_id"] in request.device_ids]
 
     if not target_devices:
-        raise HTTPException(
-            status_code=404, detail="No matching devices found.")
+        raise HTTPException(status_code=404, detail="No matching devices found.")
 
     for device_data in target_devices:
         background_tasks.add_task(start_device_recording_task, device_data)
@@ -110,7 +109,7 @@ async def stop_recordings(request: DeviceActionRequest, background_tasks: Backgr
 
     if not target_devices:
         raise HTTPException(status_code=404, detail="No matching devices found.")
-
+            
     for device_data in target_devices:
         background_tasks.add_task(stop_device_recording_task, device_data)
 
@@ -124,7 +123,6 @@ async def get_stream_status():
     status = {device["device_id"]: device.get(
         "lsl_streaming", False) for device in devices}
     return {"status": status}
-
 
 @app.post("/devices/send_message")
 async def send_message_trigger(request: MessageTriggerRequest):

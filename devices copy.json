@@ -8,10 +8,9 @@
         "connected": false,
         "lsl_streaming": false,
         "recording": false,
-        "battery_level": 51,
-        "glasses_serial": "ecxzy",
-        "world_camera_serial": "pfh69",
-        "relay_failed": false
+        "battery_level": null,
+        "glasses_serial": null,
+        "world_camera_serial": null
     },
     {
         "ip": "192.168.0.240",
@@ -22,9 +21,8 @@
         "connected": false,
         "lsl_streaming": false,
         "recording": false,
-        "battery_level": 50,
-        "glasses_serial": "62slk",
-        "world_camera_serial": "4qup8",
-        "relay_failed": false
+        "battery_level": null,
+        "glasses_serial": null,
+        "world_camera_serial": null
     }
 ]

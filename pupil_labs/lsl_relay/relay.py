@@ -9,7 +9,7 @@ from pupil_labs.realtime_api import Device, StatusUpdateNotifier, receive_gaze_d
 from pupil_labs.realtime_api.models import Component, Event, Sensor
 from pupil_labs.realtime_api.simple.models import GazeDataType
 from pupil_labs.realtime_api.time_echo import TimeOffsetEstimator
-
+from typing import Iterable, NoReturn
 from pupil_labs.lsl_relay import outlets
 
 logger = logging.getLogger(__name__)
@@ -170,34 +170,25 @@ class Relay:
 
     async def relay_receiver_to_publisher(self):
         logger.debug(f"[Relay] Initializing tasks for device {self.device_name}")
-        tasks = await self.initialise_tasks()
-        logger.debug(f"[Relay] Awaiting tasks for device {self.device_name}")
-        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        handle_done_pending_tasks(done, pending)
+        await self.initialise_tasks()
 
-    async def initialise_tasks(self) -> List["asyncio.Task[NoReturn]"]:
+        # Keep the relay running until one of the tasks completes
+        try:
+            await asyncio.gather(
+                self.receiving_task,
+                self.publishing_gaze_task,
+                self.publishing_event_task,
+            )
+        except asyncio.CancelledError:
+            logger.info(f"[Relay] Relay tasks for device {self.device_name} have been cancelled.")
+        finally:
+            logger.debug(f"[Relay] Relay_receiver_to_publisher exiting for device {self.device_name}")
+
+    async def initialise_tasks(self):
         await self.receiver.make_status_update_notifier()
         await self.start_receiving_task()
         await self.start_publishing_gaze()
         await self.start_publishing_event()
-        tasks = [
-            self.receiving_task,
-            self.publishing_gaze_task,
-            self.publishing_event_task,
-        ]
-        # start time sync task
-        if self._time_sync_interval:
-            time_sync_task = asyncio.create_task(
-                send_events_in_interval(
-                    self.device_ip,
-                    self.device_port,
-                    self.session_id,
-                    self._time_sync_interval,
-                )
-            )
-            tasks.append(time_sync_task)
-            logger.debug(f"[Relay] Time sync task started for device {self.device_name}")
-        return [t for t in tasks if t is not None]
 
     async def get_device_info_for_outlet(cls, device_ip: str, device_port: int):
         from pupil_labs.lsl_relay.cli import get_device_info_for_outlet
@@ -272,6 +263,10 @@ class DataReceiver:
         if self.notifier is not None:
             await self.notifier.receive_updates_stop()
             logger.debug(f"[DataReceiver] StatusUpdateNotifier stopped for device {self.device_name}")
+        # Close the outlets
+        self.gaze_outlet.close()
+        self.event_outlet.close()
+        logger.debug(f"[DataReceiver] Outlets closed for device {self.device_name}")
 
 class GazeAdapter:
     def __init__(self, sample: GazeDataType, clock_offset_ns: int):
@@ -287,26 +282,6 @@ class EventAdapter:
         self.timestamp_unix_seconds = (
             sample.timestamp + clock_offset_ns
         ) * 1e-9
-
-def handle_done_pending_tasks(
-    done: Iterable["asyncio.Task[NoReturn]"],
-    pending: Iterable["asyncio.Task[NoReturn]"],
-):
-    for done_task in done:
-        try:
-            done_task.result()
-        except asyncio.CancelledError:
-            logger.warning(f"[Relay] Task cancelled: {done_task}")
-        except Exception as e:
-            logger.exception(f"[Relay] Task raised an exception: {e}")
-
-    for pending_task in pending:
-        try:
-            pending_task.cancel()
-            logger.debug(f"[Relay] Pending task cancelled: {pending_task}")
-        except asyncio.CancelledError:
-            # Cancelling is the intended behavior
-            pass
 
 async def send_events_in_interval(
     device_ip: str, device_port: int, session_id: str, sec: int = 60
