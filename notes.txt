@@ -1,0 +1,29 @@
+2024-11-05 16:37:51.388 (  23.144s) [W_pupil_labs_N  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:37:51.389 (  23.144s) [W_pupil_labs_R  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:37:51.389 (  23.145s) [W_pupil_labs_U  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:37:51.390 (  23.146s) [W_pupil_labs_P  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:37:51.436 (  23.191s) [W_pupil_labs_I  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:37:51.436 (  23.191s) [W_pupil_labs_S  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:37:51.437 (  23.192s) [W_pupil_labs_V  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+
+
+2024-11-05 16:42:32.105 ( 255.445s) [W_pupil_labs_U  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.105 ( 255.445s) [W_pupil_labs_P  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.106 ( 255.446s) [W_pupil_labs_S  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.106 ( 255.446s) [W_pupil_labs_K  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.134 ( 255.474s) [W_pupil_labs_J  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.138 ( 255.478s) [W_pupil_labs_W  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.144 ( 255.484s) [W_pupil_labs_V  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.146 ( 255.486s) [W_pupil_labs_Q  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:32.147 ( 255.487s) [W_pupil_labs_I  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.106 ( 271.445s) [W_pupil_labs_N  ]resolve_attempt_udp.cpp:40    WARN| Cannot open UDP broadcast socket for resolves: open: Too many open files
+2024-11-05 16:42:48.106 ( 271.446s) [W_pupil_labs_P  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.107 ( 271.446s) [W_pupil_labs_S  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.107 ( 271.447s) [W_pupil_labs_K  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.135 ( 271.475s) [W_pupil_labs_J  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.138 ( 271.478s) [W_pupil_labs_W  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.144 ( 271.484s) [W_pupil_labs_V  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.147 ( 271.486s) [W_pupil_labs_Q  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+2024-11-05 16:42:48.148 ( 271.488s) [W_pupil_labs_I  ]      resolver_impl.cpp:206    ERR| Could not start a multicast resolve attempt for any of the allowed protocol stacks: open: Too many open files
+
+77367 80142
