@@ -147,12 +147,11 @@ def pi_streaminfo(
     device_identifier: str,  
 ):
     stream_info = lsl.StreamInfo(
-        # Include device identifier
         name=f"{outlet_name_prefix}_{device_identifier}_{type_name}",
         type=type_name,
         channel_count=len(channels),
         channel_format=channel_format,
-        source_id=outlet_uuid,
+        source_id=device_identifier
     )
     xml_acquisition = stream_info.desc().append_child("acquisition")
     for key in acquisition_info.keys():

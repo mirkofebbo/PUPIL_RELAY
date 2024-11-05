@@ -8,16 +8,18 @@
         "connected": false,
         "lsl_streaming": false,
         "recording": false,
-        "battery_level": 56,
-        "glasses_serial": "z2sc9",
-        "world_camera_serial": "mk56n"
+        "battery_level": 42,
+        "glasses_serial": "738ep",
+        "world_camera_serial": "85ge4",
+        "error_message": "Failed to start relay for device A: [Errno 54] Connection reset by peer",
+        "relay_failed": true
     },
     {
         "ip": "192.168.1.159",
         "port": 8080,
         "name": "B",
         "device_id": "B",
-        "available": true,
+        "available": false,
         "connected": false,
         "lsl_streaming": false,
         "recording": false,

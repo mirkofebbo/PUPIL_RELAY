@@ -255,6 +255,8 @@ async def update_device_in_json(device_data):
         if d["device_id"] == device_data["device_id"]:
             devices[idx] = device_data
             break
+    else:
+        devices.append(device_data)  # If device is not in the list, add it
     await write_json_file(JSON_FILE_PATH, devices)
 
 if __name__ == "__main__":
