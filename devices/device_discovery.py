@@ -8,7 +8,6 @@ from pupil_labs.realtime_api.discovery import discover_devices, DiscoveredDevice
 from utils.utils import read_json_file, write_json_file
 
 JSON_FILE_PATH = 'devices.json'
-
 async def discover_and_log_devices():
     """Continuously discover devices and update the devices.json file."""
     async for device_info in discover_devices():
@@ -19,7 +18,7 @@ async def discover_and_log_devices():
         device_data = {
             "ip": device_ip,
             "port": device_port,
-            "name": device_id,  # You can customize this
+            "name": device_id, 
             "device_id": device_id,
             "available": True,
             "connected": False,
