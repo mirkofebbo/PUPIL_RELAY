@@ -25,12 +25,16 @@ class CompanionChannel:
 
 
 def companion_event_channels():
-    return [
+    channels: List[CompanionChannel] = []
+    channels.extend(
+        [
         CompanionChannel(
             sample_query=pi_extract_from_sample("name"),
             channel_information_dict={"label": "Event", "format": "string"},
         )
-    ]
+            ]
+    )
+    return channels
 
 
 def companion_gaze_channels() -> List[CompanionChannel]:

@@ -66,6 +66,10 @@ async def stop_relays(devices):
             await stop_device_relay(incomplete_device)
 
 async def start_device_relay(device_data: DeviceModel):
+    if device_data.lsl_streaming:
+        logger.warning(f"[LSL Relay] Relay already running for device {device_data.device_id}.")
+        return 
+    
     device_ip = device_data.ip
     device_port = device_data.port
     device_identifier = device_data.device_id
@@ -161,10 +165,12 @@ async def shutdown_manager():
     async with relay_tasks_lock:
         tasks = list(relay_tasks.values())
         for task in tasks:
-            task.cancel()
+            if not task.done():
+                task.cancel()
     # Wait for all tasks to be cancelled
     await asyncio.gather(*tasks, return_exceptions=True)
     logger.info("All relay tasks have been cancelled.")
+
 
 def handle_signals():
     """Handle OS signals for graceful shutdown."""

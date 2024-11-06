@@ -35,6 +35,7 @@ class PupilCompanionOutlet:
         outlet_uuid: str,
         acquisition_info: Dict[str, str],
         device_identifier: str, 
+        
     ):
         self._outlet_uuid = outlet_uuid
         self._channels = channel_func()
@@ -151,7 +152,9 @@ def pi_streaminfo(
         type=type_name,
         channel_count=len(channels),
         channel_format=channel_format,
-        source_id=device_identifier
+        source_id=device_identifier,
+        nominal_srate=120
+        
     )
     xml_acquisition = stream_info.desc().append_child("acquisition")
     for key in acquisition_info.keys():
