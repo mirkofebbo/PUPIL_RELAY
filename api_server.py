@@ -11,6 +11,7 @@ from pupil_labs.realtime_api import Device
 from pupil_labs.realtime_api.time_echo import TimeOffsetEstimator
 from utils.utils import read_json_file, write_json_file, DeviceModel
 from pupil_labs.lsl_relay import relay  # Ensure relay.py is accessible as a module
+import pylsl  # Added for LSL functionality
 
 app = FastAPI()
 JSON_FILE_PATH = 'devices.json'
@@ -30,17 +31,59 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 # Dictionary to keep track of relay tasks per device_id
 relay_tasks = {}
 relay_tasks_lock = asyncio.Lock()
 
+# Define LSL Timestamp Outlet Class
+class LSLTimestampOutlet:
+    def __init__(self):
+        self.outlet = None
+        self.create_outlet()
+
+    def create_outlet(self):
+        """Initialize the LSL stream outlet for timestamped messages."""
+        info = pylsl.StreamInfo(
+            name="TimestampStream",
+            type="Timestamp",
+            channel_count=1,
+            channel_format=pylsl.cf_string,
+            source_id="timestamp_stream_01"
+        )
+        self.outlet = pylsl.StreamOutlet(info)
+        logger.info("[LSL Timestamp] LSL Timestamp Stream created.")
+
+    def send_message(self, message: str):
+        """Send a message with the current Unix timestamp."""
+        timestamp = int(time.time())  # Unix time in seconds
+        data = f'{{"timestamp": {timestamp}, "message": "{message}"}}'
+        self.outlet.push_sample([data])
+        logger.debug(f"[LSL Timestamp] Sent message: {data}")
+
+# Instantiate the LSL Timestamp Outlet
+timestamp_outlet = LSLTimestampOutlet()
+
+# Background task to send "H" every 10 seconds
+async def send_heartbeat():
+    while True:
+        timestamp_outlet.send_message("H")
+        await asyncio.sleep(10)
+
+# Health Check Endpoint (Optional)
+@app.get("/health")
+async def health_check():
+    relay_status = {device_id: not task.done() for device_id, task in relay_tasks.items()}
+    return {"status": "ok", "relay_status": relay_status}
+
+# Define Pydantic Models
 class DeviceActionRequest(BaseModel):
     device_ids: List[str]
 
 class MessageTriggerRequest(BaseModel):
-    device_ids: List[str]
     message: str
 
+# Define API Endpoints
 @app.get("/devices", response_model=List[DeviceModel])
 async def get_devices():
     devices = await read_json_file(JSON_FILE_PATH)
@@ -101,22 +144,33 @@ async def stop_recordings(request: DeviceActionRequest, background_tasks: Backgr
 @app.post("/devices/send_message")
 async def send_message_trigger(request: MessageTriggerRequest):
     devices = await read_json_file(JSON_FILE_PATH)
-    target_devices = [d for d in devices if d.device_id in request.device_ids]
 
-    if not target_devices:
-        raise HTTPException(status_code=404, detail="No matching devices found.")
+    if not devices:
+        raise HTTPException(status_code=404, detail="No devices found.")
 
     tasks = []
-    for device_data in target_devices:
-        # Send message asynchronously
+    for device_data in devices:
+        # Send message asynchronously to devices
         tasks.append(send_message_to_device(device_data, request.message))
+    
+    # Also send the message to the LSL timestamp stream once
+    tasks.append(send_custom_timestamp_message(request.message))
 
     # Await all tasks
     await asyncio.gather(*tasks, return_exceptions=True)
 
-    return {"message": "Messages have been sent."}
+    return {"message": "Messages have been sent to all devices."}
 
-# Helper functions
+
+async def send_custom_timestamp_message(message: str):
+    """Send a custom message to the LSL timestamp stream."""
+    try:
+        timestamp_outlet.send_message(message)
+        logger.info(f"[LSL Timestamp] Custom message sent: {message}")
+    except Exception as e:
+        logger.error(f"[LSL Timestamp] Failed to send custom message: {e}")
+
+# Helper Functions
 
 async def start_device_relay_task(device_data: DeviceModel):
     """Start the LSL relay for a single device."""
@@ -200,6 +254,7 @@ async def stop_device_recording_task(device_data: DeviceModel):
     await update_device_in_json(device_data)
 
 async def send_message_to_device(device_data: DeviceModel, message: str):
+    """Send a message to a single device."""
     device_ip = device_data.ip
     device_port = device_data.port
     device_id = device_data.device_id
@@ -254,11 +309,14 @@ async def update_device_in_json(device_data: DeviceModel):
     await write_json_file(JSON_FILE_PATH, devices)
     logger.debug(f"devices.json updated for device {device_data.device_id}")
 
-# Health Check Endpoint (Optional)
-@app.get("/health")
-async def health_check():
-    relay_status = {device_id: not task.done() for device_id, task in relay_tasks.items()}
-    return {"status": "ok", "relay_status": relay_status}
+
+# Start background tasks on app startup
+@app.on_event("startup")
+async def startup_event():
+    # Start the heartbeat task
+    asyncio.create_task(send_heartbeat())
+    # Start resource monitoring
+    asyncio.create_task(monitor_open_file_descriptors())
 
 # Start Resource Monitoring (Optional)
 async def monitor_open_file_descriptors():
@@ -271,9 +329,11 @@ async def monitor_open_file_descriptors():
             logger.warning(f"High number of open file descriptors: {fd_count}")
         await asyncio.sleep(60)  # Check every minute
 
-@app.on_event("startup")
-async def startup_event():
-    asyncio.create_task(monitor_open_file_descriptors())
+# Shutdown event to ensure proper cleanup
+@app.on_event("shutdown")
+async def shutdown_event():
+
+    logger.info("[LSL Timestamp] Shutting down Timestamp Stream.")
 
 if __name__ == "__main__":
     import uvicorn
