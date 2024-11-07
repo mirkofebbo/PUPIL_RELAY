@@ -51,3 +51,19 @@ async def write_json_file(file_path: str, devices: List[DeviceModel]):
             # Convert Pydantic models to dicts
             data = [device.dict() for device in devices]
             await f.write(json.dumps(data, indent=4))
+
+
+
+async def update_device_in_json(file_path: str,device_data: DeviceModel):
+    """Update the devices.json file with the new or updated device data."""
+    devices = await read_json_file(file_path)
+    device_found = False
+    for idx, d in enumerate(devices):
+        if d.device_id == device_data.device_id:
+            devices[idx] = device_data
+            device_found = True
+            break
+    if not device_found:
+        devices.append(device_data)
+
+    await write_json_file(file_path, devices)

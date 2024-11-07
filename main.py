@@ -30,7 +30,7 @@ async def main():
     
     tasks = [
         run_device_discovery(),
-        run_lsl_relay_manager(),
+        # run_lsl_relay_manager(),
         monitor_device_status(),
         monitor_open_file_descriptors()  
     ]
