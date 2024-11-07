@@ -42,22 +42,22 @@ async def update_device_status(device_data: DeviceModel):
     try:
         async with Device(device_ip, device_port) as device:
             status = await device.get_status()
-            # Update only relevant fields
             device_data.available = True
             device_data.battery_level = status.phone.battery_level
             device_data.glasses_serial = status.hardware.glasses_serial or "unknown"
             device_data.world_camera_serial = status.hardware.world_camera_serial or "unknown"
-            device_data.connected = True  # Assuming successful connection
+            device_data.connected = True
             device_data.error_message = ""
-            # Do NOT modify lsl_streaming or recording here
-
             logger.info(f"[Device Monitor] Updated status for device {device_id}")
+    except asyncio.CancelledError:
+        logger.info(f"[Device Monitor] Task for device {device_id} cancelled")
     except Exception as e:
         logger.error(f"[Device Monitor] Could not update status for device {device_id}: {e}")
         device_data.available = False
         device_data.connected = False
-        # Do NOT modify lsl_streaming or recording here
         device_data.error_message = str(e)
+    finally:
+        logger.info(f"[Device Monitor] Finished updating status for device {device_id}")
 
 if __name__ == "__main__":
     asyncio.run(monitor_device_status())

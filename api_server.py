@@ -67,11 +67,17 @@ class LSLTimestampOutlet:
 
     def send_message(self, message: str):
         """Send a message with the current Unix timestamp."""
-        timestamp = int(time.time()) 
-        data = f'T:{timestamp}_M:{message}'
-        self.outlet.push_sample([data])
-        print(data)
-        logger.debug(f"[LSL Timestamp] Sent message: {data}")
+        try:
+            timestamp = int(time.time())
+            data = f'T:{timestamp}_M:{message}'
+            if self.outlet:
+                self.outlet.push_sample([data])
+                print(data)
+                logger.debug(f"[LSL Timestamp] Sent message: {data}")
+            else:
+                logger.error("[LSL Timestamp] LSL outlet is not initialized.")
+        except Exception as e:
+            logger.error(f"[LSL Timestamp] Failed to send message: {e}")
 
 # Instantiate the LSL Timestamp Outlet
 timestamp_outlet = LSLTimestampOutlet()
@@ -126,23 +132,29 @@ async def send_message_trigger(request: MessageTriggerRequest):
 
     if not devices:
         raise HTTPException(status_code=404, detail="No devices found.")
-
-    tasks = [send_message_to_device(device_data, request.message) for device_data in devices]
+    timestamp = int(time.time())
+    data = f'T:{timestamp}_M:{request.message}'
+    tasks = [send_message_to_device(device_data, data) for device_data in devices]
     tasks.append(send_custom_timestamp_message(request.message))
 
     try:
-        await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=30)  # Example timeout of 30 seconds
+        # Wait for tasks with a timeout
+        await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=30)
     except asyncio.TimeoutError:
         logger.error("Timeout occurred while sending messages to devices. Tasks were cancelled.")
+        # Cancel and safely handle the tasks
         for task in tasks:
             if not task.done():
                 task.cancel()
                 try:
                     await task
                 except asyncio.CancelledError:
-                    logger.info("A task was cancelled.")
+                    logger.info("A task was cancelled during timeout handling.")
+    except Exception as e:
+        logger.error(f"An error occurred during message sending: {e}")
 
-    return {"message": "Messages have been sent to all devices."}
+    return {"message": "Messages have been processed, including handling of cancellations."}
+
 
 
 async def send_custom_timestamp_message(message: str):

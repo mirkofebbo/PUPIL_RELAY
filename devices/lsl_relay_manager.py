@@ -81,7 +81,6 @@ async def start_device_relay(device_data: DeviceModel):
     logger.debug(f"Attempting to start relay for device {device_identifier}")
 
     try:
-        # Start the relay as a background task
         relay_task = asyncio.create_task(relay.Relay.run(
             device_ip=device_ip,
             device_port=device_port,
@@ -91,28 +90,25 @@ async def start_device_relay(device_data: DeviceModel):
             module_serial=module_serial,
             time_sync_interval=time_sync_interval,
         ))
-        # Store the task
+
         async with relay_tasks_lock:
             relay_tasks[device_identifier] = relay_task
         logger.info(f"[LSL Relay] Started relay for device {device_identifier}")
 
-        # Update device status
+        # Ensure that relay tasks are marked as streaming
         device_data.lsl_streaming = True
-        device_data.error_message = ""  # Clear any previous error message
+        device_data.error_message = ""
 
     except Exception as e:
-        error_message = f"Failed to start relay for device {device_identifier}: {e}"
-        logger.error(f"[LSL Relay] {error_message}")
+        logger.error(f"[LSL Relay] Failed to start relay for device {device_identifier}: {e}")
         device_data.lsl_streaming = False
-        device_data.error_message = error_message  # Prevent endless retries
-
+        device_data.error_message = str(e)
     # Update the JSON file with the new device data
     await update_device_in_json(device_data)
 
 async def stop_device_relay(device_data: DeviceModel):
     device_identifier = device_data.device_id
     logger.debug(f"Attempting to stop relay for device {device_identifier}")
-
     async with relay_tasks_lock:
         relay_task = relay_tasks.get(device_identifier)
         if relay_task and not relay_task.done():
@@ -123,6 +119,8 @@ async def stop_device_relay(device_data: DeviceModel):
                 logger.info(f"[LSL Relay] Relay task for device {device_identifier} cancelled")
             except Exception as e:
                 logger.exception(f"[LSL Relay] Exception while cancelling relay for device {device_identifier}: {e}")
+            finally:
+                relay_task.cancelled()  # Ensure the task is marked as cancelled
             del relay_tasks[device_identifier]
             logger.info(f"[LSL Relay] Stopped relay for device {device_identifier}")
         else:
@@ -130,6 +128,7 @@ async def stop_device_relay(device_data: DeviceModel):
 
     device_data.lsl_streaming = False
     await update_device_in_json(device_data)
+
 
 async def update_device_in_json(device_data: DeviceModel):
     devices = await read_json_file(JSON_FILE_PATH)
@@ -160,16 +159,24 @@ async def run_lsl_relay_manager():
         await asyncio.sleep(10)  # Check every 10 seconds
 
 async def shutdown_manager():
-    """Shutdown the relay manager gracefully."""
-    logger.info("Shutting down LSL Relay Manager...")
+    """Shutdown the relay manager and other resources gracefully."""
+    logger.info("Shutting down LSL Relay Manager and cleaning up resources...")
     async with relay_tasks_lock:
         tasks = list(relay_tasks.values())
         for task in tasks:
             if not task.done():
                 task.cancel()
-    # Wait for all tasks to be cancelled
-    await asyncio.gather(*tasks, return_exceptions=True)
-    logger.info("All relay tasks have been cancelled.")
+                try:
+                    await task
+                except asyncio.CancelledError:
+                    logger.info(f"[Shutdown] Relay task {task} was cancelled")
+                except Exception as e:
+                    logger.exception(f"[Shutdown] Exception while cancelling task: {e}")
+        # Ensure all relay tasks are awaited
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+    logger.info("All relay tasks and resources have been cleaned up.")
+
 
 
 def handle_signals():
