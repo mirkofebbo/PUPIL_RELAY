@@ -4,7 +4,6 @@ import asyncio
 import logging
 import time
 from typing import List
-from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from pydantic import BaseModel
@@ -12,9 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from pupil_labs.realtime_api import Device
 from pupil_labs.realtime_api.time_echo import TimeOffsetEstimator
 from utils.utils import read_json_file, write_json_file, DeviceModel
-import pylsl  # For LSL functionality
+from lsl_manager import LSLManager 
 
-from lsl_manager import LSLManager  # Import the LSLManager
+from contextlib import asynccontextmanager
+
+import cProfile
+import re
 
 # Define Pydantic Models
 class DeviceActionRequest(BaseModel):
@@ -38,7 +40,6 @@ async def send_heartbeat():
     try:
         while True:
             lsl_manager.send_message("H")
-            logger.debug("Heartbeat message sent.")
             await asyncio.sleep(10)
     except asyncio.CancelledError:
         logger.info("Heartbeat task received cancellation.")
@@ -50,12 +51,16 @@ async def monitor_open_file_descriptors(interval=60):
     logger.info("File descriptor monitoring task started.")
     import psutil
     process = psutil.Process()
+    print(cProfile.run('re.compile("foo|bar")', 'restats'))
+
     try:
         while True:
             fd_count = process.num_fds()
             logger.debug(f"[Resource Monitor] Current open file descriptors: {fd_count}")
-            if fd_count > 80000:  # Example threshold; adjust as needed
+            print(f"[Resource Monitor] Current open file descriptors: {fd_count}")
+            if fd_count > 100:
                 logger.warning(f"[Resource Monitor] High number of open file descriptors: {fd_count}")
+                print(f"[Resource Monitor] High number of open file descriptors: {fd_count}")
             await asyncio.sleep(interval)
     except asyncio.CancelledError:
         logger.info("File descriptor monitoring task received cancellation.")
@@ -78,21 +83,8 @@ async def lifespan_handler(app: FastAPI):
         # Cancel background tasks
         heartbeat_task.cancel()
         monitor_task.cancel()
-        # Await task cancellations
-        try:
-            await heartbeat_task
-        except asyncio.CancelledError:
-            logger.info("Heartbeat task was cancelled.")
-        except Exception as e:
-            logger.error(f"Error during heartbeat task cancellation: {e}")
-        try:
-            await monitor_task
-        except asyncio.CancelledError:
-            logger.info("File descriptor monitoring task was cancelled.")
-        except Exception as e:
-            logger.error(f"Error during monitor task cancellation: {e}")
-        # Clean up LSL manager
-        lsl_manager.close_outlet()
+        await lsl_manager.close_outlet()
+
         logger.info("Application cleanup completed.")
 
 # Initialize FastAPI with Lifespan
@@ -142,12 +134,14 @@ async def stop_recordings(request: DeviceActionRequest, background_tasks: Backgr
 @app.post("/devices/send_message")
 async def send_message_trigger(request: MessageTriggerRequest):
     devices = await read_json_file('devices.json')
-
-    if not devices:
+    tasks = []
+    if not devices or not devices:
         raise HTTPException(status_code=404, detail="No devices found.")
 
     # Prepare messages
-    tasks = [send_message_to_device(device_data, request.message) for device_data in devices]
+    for device_data in devices:
+        if device_data.available:
+            tasks.append(send_message_to_device(device_data, request.message))
     tasks.append(send_custom_timestamp_message(request.message))
 
     try:
@@ -157,7 +151,7 @@ async def send_message_trigger(request: MessageTriggerRequest):
         logger.error("Timeout occurred while sending messages to devices. Tasks were cancelled.")
         # Cancel and safely handle the tasks
         for task in tasks:
-            if not task.done():
+            if not await task.done():
                 task.cancel()
                 try:
                     await task
@@ -172,7 +166,6 @@ async def send_custom_timestamp_message(message: str):
     """Send a custom message to the LSL timestamp stream."""
     lsl_manager.send_message(message)
 
-# Device Recording Functions
 async def start_device_recording_task(device_data: DeviceModel):
     """Start recording on a single device."""
     try:
@@ -213,7 +206,7 @@ async def send_message_to_device(device_data: DeviceModel, message: str):
             time_offset_estimator = TimeOffsetEstimator(
                 status.phone.ip, time_echo_port
             )
-            # Reduce the number of measurements to speed up estimation
+            # Reduce the number of measurements to speed up estimation vcv
             estimated_offset = await time_offset_estimator.estimate(number_of_measurements=10)
             if estimated_offset is None:
                 logger.warning(f"[API Server] Time offset estimation failed for device {device_data.device_id}. Sending message without adjustment.")

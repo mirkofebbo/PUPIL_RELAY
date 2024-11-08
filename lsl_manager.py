@@ -35,8 +35,10 @@ class LSLManager:
             if self.outlet:
                 self.outlet.push_sample([data])
                 self.logger.debug(f"[LSLManager] Sent message: {data}")
+                print(f"[LSLManager] Sent message: {data}")
             else:
                 self.logger.warning("[LSLManager] LSL outlet is not initialized. Attempting to recreate outlet.")
+                print("[LSLManager] LSL outlet is not initialized. Attempting to recreate outlet.")
                 self.create_outlet()
                 if self.outlet:
                     self.outlet.push_sample([data])
@@ -46,9 +48,11 @@ class LSLManager:
         except Exception as e:
             self.logger.error(f"[LSLManager] Failed to send message: {e}")
 
-    def close_outlet(self):
+    async def close_outlet(self):
         """Close the LSL outlet gracefully."""
+
         if self.outlet:
             del self.outlet
             self.outlet = None
             self.logger.info("[LSLManager] LSL Timestamp Stream closed.")
+            print("[LSLManager] LSL Timestamp Stream closed.")

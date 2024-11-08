@@ -34,6 +34,8 @@ async def monitor_device_status():
         await write_json_file(JSON_FILE_PATH, devices)
 
         await asyncio.sleep(60)  
+
+        
 async def update_device_status(device_data: DeviceModel):
     device_ip = device_data.ip
     device_port = device_data.port
