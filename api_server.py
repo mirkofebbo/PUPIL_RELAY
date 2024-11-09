@@ -39,8 +39,31 @@ async def send_heartbeat():
     logger.info("Heartbeat task started.")
     try:
         while True:
-            lsl_manager.send_message("H")
+            devices = await read_json_file('devices.json')
+            tasks = []
+            message = "H"
+            tasks.append(send_custom_timestamp_message(message))
+
+            for device_data in devices:
+                    if device_data.available:
+                        tasks.append(send_message_to_device(device_data, message))
+            try:
+                # Wait for tasks with a timeout
+                await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=30)
+            except asyncio.TimeoutError:
+                logger.error("Timeout occurred while sending messages to devices. Tasks were cancelled.")
+                # Cancel and safely handle the tasks
+                for task in tasks:
+                    if not await task.done():
+                        task.cancel()
+                        try:
+                            await task
+                        except asyncio.CancelledError:
+                            logger.info("Heartbeat cancelled")
+            except Exception as e:
+                logger.error(f"An error occurred during heartbeat: {e}")
             await asyncio.sleep(10)
+
     except asyncio.CancelledError:
         logger.info("Heartbeat task received cancellation.")
     except Exception as e:
@@ -135,14 +158,12 @@ async def stop_recordings(request: DeviceActionRequest, background_tasks: Backgr
 async def send_message_trigger(request: MessageTriggerRequest):
     devices = await read_json_file('devices.json')
     tasks = []
-    if not devices or not devices:
-        raise HTTPException(status_code=404, detail="No devices found.")
+    tasks.append(send_custom_timestamp_message(request.message))
 
     # Prepare messages
     for device_data in devices:
         if device_data.available:
             tasks.append(send_message_to_device(device_data, request.message))
-    tasks.append(send_custom_timestamp_message(request.message))
 
     try:
         # Wait for tasks with a timeout
@@ -223,6 +244,8 @@ async def send_message_to_device(device_data: DeviceModel, message: str):
             # Send the message with adjusted timestamp
             await device.send_event(message, event_timestamp_unix_ns=adjusted_timestamp_ns)
             logger.info(f"[API Server] Sent message to device {device_data.device_id} with adjusted timestamp")
+            print(f"[API Server] {device_data.device_id} message sent")
+
     except Exception as e:
         logger.error(f"[API Server] Could not send message to device {device_data.device_id}: {e}")
     finally:
