@@ -1,9 +1,6 @@
 # device_discovery.py
 
 import asyncio
-import json
-import os
-import time
 from pupil_labs.realtime_api.discovery import discover_devices, DiscoveredDeviceInfo
 from utils.utils import read_json_file, write_json_file, DeviceModel
 
@@ -11,7 +8,6 @@ JSON_FILE_PATH = 'devices.json'
 
 async def discover_and_log_devices():
     """Continuously discover devices and update the devices.json file."""
-    print("[Device Discovery] Looking for devices")
     async for device_info in discover_devices():
         device_ip = device_info.addresses[0]
         device_port = device_info.port
@@ -68,6 +64,7 @@ async def update_devices_json(device_data: DeviceModel):
 async def run_device_discovery():
     """Run the device discovery loop."""
     while True:
+        print("[Device Discovery] Looking for devices")
         try:
             await discover_and_log_devices()
         except Exception as e:
