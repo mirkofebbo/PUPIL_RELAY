@@ -12,6 +12,7 @@ class LSLManager:
         self.create_outlet()
 
     def create_outlet(self):
+        print("[LSLManager] LSL Timestamp Stream created.")
         """Initialize the LSL stream outlet for timestamped messages."""
         try:
             info = pylsl.StreamInfo(
@@ -35,6 +36,7 @@ class LSLManager:
             if self.outlet:
                 self.outlet.push_sample([data])
                 self.logger.debug(f"[LSLManager] Sent message: {data}")
+                
                 print(f"[LSLManager] Sent message: {data}")
             else:
                 self.logger.warning("[LSLManager] LSL outlet is not initialized. Attempting to recreate outlet.")

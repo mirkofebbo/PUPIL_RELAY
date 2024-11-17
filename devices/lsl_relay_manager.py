@@ -6,7 +6,7 @@ from pupil_labs.lsl_relay import relay
 from utils.utils import read_json_file, write_json_file, DeviceModel
 
 JSON_FILE_PATH = 'devices.json'
-LOG_FILE_NAME = 'lsl_relay.log'
+LOG_FILE_NAME = 'pupi_lsl_relay.log'
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE_NAME, 
@@ -129,7 +129,6 @@ async def stop_device_relay(device_data: DeviceModel):
     device_data.lsl_streaming = False
     await update_device_in_json(device_data)
 
-
 async def update_device_in_json(device_data: DeviceModel):
     devices = await read_json_file(JSON_FILE_PATH)
     device_found = False
@@ -176,8 +175,6 @@ async def shutdown_manager():
         await asyncio.gather(*tasks, return_exceptions=True)
 
     logger.info("All relay tasks and resources have been cleaned up.")
-
-
 
 def handle_signals():
     """Handle OS signals for graceful shutdown."""

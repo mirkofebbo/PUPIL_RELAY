@@ -12,6 +12,10 @@ from pupil_labs.realtime_api.time_echo import TimeOffsetEstimator
 
 from pupil_labs.lsl_relay import outlets  # Ensure this is correctly implemented
 
+LOG_FILE_NAME = 'pupi_relay.log'
+
+logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE_NAME, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 logging.getLogger("pupil_labs.realtime_api.time_echo").setLevel("WARNING")
 
@@ -249,7 +253,7 @@ class DataReceiver:
         self.gaze_sensor_url: Optional[str] = None
         self.event_queue: asyncio.Queue[EventAdapter] = asyncio.Queue()
         self.clock_offset_ns: int = 0
-        self.gaze_outlet = None  # Placeholder for outlets to close in cleanup
+        self.gaze_outlet = None 
         self.event_outlet = None
 
     async def on_update(self, component: Component):
@@ -314,9 +318,11 @@ class DataReceiver:
         # Close outlets if they exist
         if self.gaze_outlet:
             self.gaze_outlet.close()
+            del self.gaze_outlet
             logger.debug(f"[DataReceiver] Gaze outlet closed for device {self.device_name}")
         if self.event_outlet:
             self.event_outlet.close()
+            del self.gaze_outlet
             logger.debug(f"[DataReceiver] Event outlet closed for device {self.device_name}")
 
 class GazeAdapter:

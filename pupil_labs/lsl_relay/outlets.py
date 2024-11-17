@@ -89,7 +89,9 @@ class PupilCompanionGazeOutlet(PupilCompanionOutlet):
         )
 
 
-class PupilCompanionEventOutlet(PupilCompanionOutlet):
+class PupilCompanionEventOutlet(
+    
+):
     def __init__(
         self,
         device_id: str,
@@ -135,6 +137,7 @@ def pi_create_outlet(
         acquisition_info,
         device_identifier, 
     )
+    print("OUTLET CREATED", device_identifier)
     return lsl.StreamOutlet(stream_info)
 
 

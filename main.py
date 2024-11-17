@@ -14,7 +14,7 @@ async def monitor_open_file_descriptors(interval=60):
     while True:
         fd_count = process.num_fds()
         print(f"[Resource Monitor] Current open file descriptors: {fd_count}")
-        if fd_count > 100: 
+        if fd_count > 500: 
             print(f"[Resource Monitor] High number of open file descriptors: {fd_count}")
         await asyncio.sleep(interval)
 
