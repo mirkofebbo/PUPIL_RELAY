@@ -1,0 +1,30 @@
+[
+    {
+        "ip": "192.168.0.7",
+        "port": 8080,
+        "name": "D",
+        "device_id": "D",
+        "available": true,
+        "connected": false,
+        "lsl_streaming": false,
+        "recording": false,
+        "battery_level": 51,
+        "glasses_serial": "ecxzy",
+        "world_camera_serial": "pfh69",
+        "relay_failed": false
+    },
+    {
+        "ip": "192.168.0.240",
+        "port": 8080,
+        "name": "C",
+        "device_id": "C",
+        "available": true,
+        "connected": false,
+        "lsl_streaming": false,
+        "recording": false,
+        "battery_level": 50,
+        "glasses_serial": "62slk",
+        "world_camera_serial": "4qup8",
+        "relay_failed": false
+    }
+]
