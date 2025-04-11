@@ -37,11 +37,16 @@ lsl_manager = LSLManager()
 # Background task to send "H" every 10 seconds
 async def send_heartbeat():
     logger.info("Heartbeat task started.")
+    start_time = time.monotonic()
+    msg_delay = 10 #sec
     try:
         while True:
+            now = time.monotonic()
+            next_msg_time = now + msg_delay
+            delay = next_msg_time - now
             devices = await read_json_file('devices.json')
             tasks = []
-            message = "H"
+            message = f"H:{now}_{next_msg_time}_{delay}"
             await send_custom_timestamp_message(message)
 
             await asyncio.sleep(10)
@@ -221,9 +226,7 @@ async def send_message_to_device(device_data: DeviceModel, message: str):
 
             # Get the current time on the server
             server_time_ns = time.time_ns()
-            # Adjust the timestamp
-            adjusted_timestamp_ns = server_time_ns - int(time_offset_ms * 1e6)  # Convert ms to ns
-            # Send the message with adjusted timestamp
+            adjusted_timestamp_ns = server_time_ns - int(time_offset_ms * 1e6)  
             await device.send_event(message, event_timestamp_unix_ns=adjusted_timestamp_ns)
             logger.info(f"[API Server] Sent message to device {device_data.device_id} with adjusted timestamp")
 
