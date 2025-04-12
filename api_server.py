@@ -37,19 +37,25 @@ lsl_manager = LSLManager()
 # Background task to send "H" every 10 seconds
 async def send_heartbeat():
     logger.info("Heartbeat task started.")
-    start_time = time.monotonic()
-    msg_delay = 10 #sec
+    msg_interval = 10  # seconds
+    next_msg_time = time.monotonic() + msg_interval
     try:
         while True:
             now = time.monotonic()
-            next_msg_time = now + msg_delay
-            delay = next_msg_time - now
+            delay = max(0, next_msg_time - now) 
+            await asyncio.sleep(delay)
+
+            # Send heartbeat message
             devices = await read_json_file('devices.json')
             tasks = []
             message = f"H:{now}_{next_msg_time}_{delay}"
             await send_custom_timestamp_message(message)
+            for device_data in devices:
+                if device_data.available:
+                    tasks.append(send_message_to_device(device_data, message))
 
-            await asyncio.sleep(10)
+            # Calculate the next message time
+            next_msg_time += msg_interval
 
     except asyncio.CancelledError:
         logger.info("Heartbeat task received cancellation.")
@@ -148,9 +154,9 @@ async def send_message_trigger(request: MessageTriggerRequest):
     tasks.append(send_custom_timestamp_message(request.message))
 
     # Prepare messages
-    #for device_data in devices:
-     #   if device_data.available:
-      #      tasks.append(send_message_to_device(device_data, request.message))
+    for device_data in devices:
+       if device_data.available:
+           tasks.append(send_message_to_device(device_data, request.message))
 
     try:
         # Wait for tasks with a timeout
