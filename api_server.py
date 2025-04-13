@@ -121,6 +121,34 @@ async def get_devices():
     devices = await read_json_file('devices.json')
     return devices
 
+@app.post("/test/create_test_outlet")
+async def create_test_outlet(number: int):
+    """Create multiple LSL outlets for testing."""
+    if number < 0: 
+        raise HTTPException(status_code=400, detail="Number of outlets must be non-negative.")
+    
+    if number != len(lsl_manager.test_outlet):
+        # Update outlet number by closing the previous ones
+        await lsl_manager.close_test_outlet()
+        lsl_manager.test_outlet = []
+
+    try:
+        lsl_manager.create_test_outlet(number)
+        return {"message": f"{number} test outlets created."}
+    except Exception as e:
+        logger.error(f"Failed to create test outlets: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create test outlets.")
+    
+@app.post("/test/close_test_outlet")
+async def close_test_outlet():
+    """Close all test LSL outlets."""
+    try:
+        await lsl_manager.close_test_outlet()
+        return {"message": "Test outlets closed."}
+    except Exception as e:
+        logger.error(f"Failed to close test outlets: {e}")
+        raise HTTPException(status_code=500, detail="Failed to close test outlets.")
+    
 @app.post("/devices/start_recording")
 async def start_recordings(request: DeviceActionRequest, background_tasks: BackgroundTasks):
     devices = await read_json_file('devices.json')

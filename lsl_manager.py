@@ -7,6 +7,7 @@ import pylsl
 class LSLManager:
     def __init__(self, retry_interval=5):
         self.outlet = None
+        self.test_outlet = None
         self.logger = logging.getLogger(__name__)
         self.retry_interval = retry_interval
         self.create_outlet()
@@ -17,7 +18,7 @@ class LSLManager:
         try:
             info = pylsl.StreamInfo(
                 name="TimestampStream",
-                type="Timestamp",
+                type="marker",
                 channel_count=1,
                 channel_format=pylsl.cf_string, 
                 source_id="timestamp_stream_01"
@@ -28,6 +29,32 @@ class LSLManager:
             self.logger.error(f"[LSLManager] Failed to create LSL outlet: {e}")
             self.outlet = None
 
+    def create_test_outlet(self, number: int):
+        """ fucntion to test multiples outlet with the same name """
+        for n, index in range(number):
+            try: 
+                info = pylsl.StreamInfo(
+                    name="MultiOutletTest",
+                    type="marker",
+                    channel_count=1,
+                    channel_format=pylsl.cf_string,
+                    source_id="multi_outlet_test"
+                )
+                self.test_outlet.append(pylsl.StreamOutlet(info))
+                msg = f"Test Outlet Created {index}"
+                self.logger.info(f"[LSLManager] {msg}")
+                self.send_message(msg)
+            except Exception as e:
+                self.logger.error(f"[LSLManager] Failed to create test LSL outlet: {e}")
+        
+    async def close_test_outlet(self):
+        if self.test_outlet:
+            del self.test_outlet
+            self.test_outlet = None
+
+            self.logger.info("[LSLManager] LSL Test Stream closed.")
+            print("[LSLManager] LSL Test Stream closed.")
+
     def send_message(self, message: str):
         """Send a message with the current Unix timestamp."""
         try:
@@ -35,7 +62,7 @@ class LSLManager:
             data = f'T:{timestamp}_M:{message}'
             if self.outlet:
                 self.outlet.push_sample([data])
-                self.logger.debug(f"[LSLManager] Sent message: {data}")
+                self.logger.info(f"[LSLManager] Sent message: {data}")
                 
                 print(f"[LSLManager] Sent message: {data}")
             else:
@@ -44,15 +71,13 @@ class LSLManager:
                 self.create_outlet()
                 if self.outlet:
                     self.outlet.push_sample([data])
-                    self.logger.debug(f"[LSLManager] Sent message after reinitializing outlet: {data}")
+                    self.logger.info(f"[LSLManager] Sent message after reinitializing outlet: {data}")
                 else:
                     self.logger.error("[LSLManager] Failed to reinitialize LSL outlet.")
         except Exception as e:
             self.logger.error(f"[LSLManager] Failed to send message: {e}")
 
     async def close_outlet(self):
-        """Close the LSL outlet gracefully."""
-
         if self.outlet:
             del self.outlet
             self.outlet = None
