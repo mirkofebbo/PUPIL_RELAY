@@ -28,8 +28,6 @@ class MessageTriggerRequest(BaseModel):
 class OutletCreateRequest(BaseModel):
     number: int
 
-
-
 # Configure Logging
 LOG_FILE_NAME = 'api_server.log'
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE_NAME, 
@@ -53,7 +51,8 @@ async def send_heartbeat():
             # Send heartbeat message
             devices = await read_json_file('devices.json')
             tasks = []
-            message = f"H:{now}_{next_msg_time}_{delay}"
+            # message = f"H:{now}_{next_msg_time}_{delay}"
+            message = f"H:{now}"
             await send_custom_timestamp_message(message)
             for device_data in devices:
                 if device_data.available:
@@ -209,9 +208,8 @@ async def send_message_trigger(request: MessageTriggerRequest):
 
     return {"message": "Messages have been processed"}
 
-async def send_custom_timestamp_message(message: str):
-    """Send a custom message to the LSL timestamp stream."""
-    lsl_manager.send_message(message)
+
+
 
 async def start_device_recording_task(device_data: DeviceModel):
     """Start recording on a single device."""
@@ -289,6 +287,24 @@ async def update_device_in_json(device_data: DeviceModel):
         logger.debug(f"Added new device {device_data.device_id} to devices.json")
     await write_json_file('devices.json', devices)
     logger.debug(f"devices.json updated for device {device_data.device_id}")
+
+
+# @app.get("/devices/streams")
+# async def get_streams():
+#     """Get the list of available LSL streams."""
+#     try:
+#         streams = await lsl_manager.get_streams()
+#         logger.info(f"[API] Available LSL streams: {streams}")
+#         print(f"[API] Available LSL streams: {streams}")
+#         return {"streams": streams}
+#     except Exception as e:
+#         logger.error(f"[API] Failed to get LSL streams: {e}")
+#         raise HTTPException(status_code=500, detail="Failed to get LSL streams.")
+
+# async def send_custom_timestamp_message(message: str):
+#     """Send a custom message to the LSL timestamp stream."""
+#     lsl_manager.send_message(message)
+
 
 # Run the app using uvicorn
 # if __name__ == "__main__":

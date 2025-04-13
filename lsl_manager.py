@@ -1,5 +1,3 @@
-# lsl_manager.py
-
 import logging
 import time
 import pylsl
@@ -9,6 +7,7 @@ class LSLManager:
     def __init__(self, retry_interval=5):
         self.outlet = None
         self.test_outlet = None
+        self.previous_id = [] 
         self.logger = logging.getLogger(__name__)
         self.retry_interval = retry_interval
         self.create_outlet()
@@ -91,15 +90,22 @@ class LSLManager:
         return (stream.name(), stream.type(), stream.source_id())
     
 
-    def get_streams(self):
-        """Get the list of available LSL streams."""
-        previous_id = []
-        try:
-            streams = pylsl.resolve_streams()
-            stream_ids = [self.get_stream_id(stream) for stream in streams]
-            stream_count = Counter(stream_ids)
-            self.logger.info(f"[LSLManager] Available LSL streams: {streams}")
-            return streams
-        except Exception as e:
-            self.logger.error(f"[LSLManager] Failed to get LSL streams: {e}")
-            return []
+# does not work for some reason 
+    # async def get_streams(self):
+    #     """Get the list of available LSL streams."""
+    #     try:
+    #         streams = pylsl.resolve_streams()
+    #         stream_ids = [self.get_stream_id(stream) for stream in streams]
+    #         stream_count = Counter(stream_ids)
+    #         print(f"[LSLManager] LSL stream count: {streams}")
+    #         # if stream_ids != self.previous_id:
+    #         #     self.logger.info(f"[LSLManager] LSL stream count: {stream_count}")
+    #         #     self.send_message(f"LSL stream count: {stream_count}")
+    #         #     self.previous_id = stream_ids
+
+    #         self.logger.info(f"[LSLManager] Available LSL streams: {streams}")
+    #         return stream_ids
+        
+    #     except Exception as e:
+    #         self.logger.error(f"[LSLManager] Failed to get LSL streams: {e}")
+    #         return []
