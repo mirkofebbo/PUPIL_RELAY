@@ -3,6 +3,7 @@
 import logging
 import time
 import pylsl
+from collections import Counter 
 
 class LSLManager:
     def __init__(self, retry_interval=5):
@@ -30,22 +31,24 @@ class LSLManager:
             self.outlet = None
 
     def create_test_outlet(self, number: int):
-        """ fucntion to test multiples outlet with the same name """
-        for n, index in range(number):
-            try: 
+        """Function to test multiple outlets with the same name."""
+        self.test_outlet = [] 
+        for n in range(number):
+            try:
                 info = pylsl.StreamInfo(
                     name="MultiOutletTest",
                     type="marker",
                     channel_count=1,
                     channel_format=pylsl.cf_string,
-                    source_id="multi_outlet_test"
+                    source_id=f"multi_outlet_test"
                 )
-                self.test_outlet.append(pylsl.StreamOutlet(info))
-                msg = f"Test Outlet Created {index}"
+                outlet = pylsl.StreamOutlet(info)
+                self.test_outlet.append(outlet)
+                msg = f"Test Outlet Created {n+1}"
                 self.logger.info(f"[LSLManager] {msg}")
-                self.send_message(msg)
+                print(f"[LSLManager] {msg}")
             except Exception as e:
-                self.logger.error(f"[LSLManager] Failed to create test LSL outlet: {e}")
+                self.logger.error(f"[LSLManager] Failed to create test LSL outlet {n}: {e}")
         
     async def close_test_outlet(self):
         if self.test_outlet:
@@ -83,3 +86,20 @@ class LSLManager:
             self.outlet = None
             self.logger.info("[LSLManager] LSL Timestamp Stream closed.")
             print("[LSLManager] LSL Timestamp Stream closed.")
+
+    def get_stream_id(stream):
+        return (stream.name(), stream.type(), stream.source_id())
+    
+
+    def get_streams(self):
+        """Get the list of available LSL streams."""
+        previous_id = []
+        try:
+            streams = pylsl.resolve_streams()
+            stream_ids = [self.get_stream_id(stream) for stream in streams]
+            stream_count = Counter(stream_ids)
+            self.logger.info(f"[LSLManager] Available LSL streams: {streams}")
+            return streams
+        except Exception as e:
+            self.logger.error(f"[LSLManager] Failed to get LSL streams: {e}")
+            return []

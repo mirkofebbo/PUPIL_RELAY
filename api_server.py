@@ -25,6 +25,11 @@ class DeviceActionRequest(BaseModel):
 class MessageTriggerRequest(BaseModel):
     message: str
 
+class OutletCreateRequest(BaseModel):
+    number: int
+
+
+
 # Configure Logging
 LOG_FILE_NAME = 'api_server.log'
 logging.basicConfig(level=logging.DEBUG, filename=LOG_FILE_NAME, 
@@ -121,25 +126,25 @@ async def get_devices():
     devices = await read_json_file('devices.json')
     return devices
 
-@app.post("/test/create_test_outlet")
-async def create_test_outlet(number: int):
+@app.post("/devices/create_test_outlet")
+async def create_test_outlet(request: OutletCreateRequest):
     """Create multiple LSL outlets for testing."""
-    if number < 0: 
+    if request.number < 0: 
         raise HTTPException(status_code=400, detail="Number of outlets must be non-negative.")
     
-    if number != len(lsl_manager.test_outlet):
+    if lsl_manager.test_outlet and request.number != len(lsl_manager.test_outlet):
         # Update outlet number by closing the previous ones
         await lsl_manager.close_test_outlet()
         lsl_manager.test_outlet = []
-
+    print(f"Creating {request.number} test outlets.")
     try:
-        lsl_manager.create_test_outlet(number)
-        return {"message": f"{number} test outlets created."}
+        lsl_manager.create_test_outlet(request.number)
+        return {"message": f"{request.number} test outlets created."}
     except Exception as e:
         logger.error(f"Failed to create test outlets: {e}")
         raise HTTPException(status_code=500, detail="Failed to create test outlets.")
     
-@app.post("/test/close_test_outlet")
+@app.post("/devices/close_test_outlet")
 async def close_test_outlet():
     """Close all test LSL outlets."""
     try:
