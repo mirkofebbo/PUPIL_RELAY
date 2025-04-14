@@ -40,25 +40,38 @@ lsl_manager = LSLManager()
 # Background task to send "H" every 10 seconds
 async def send_heartbeat():
     logger.info("Heartbeat task started.")
-    msg_interval = 10  # seconds
+    msg_interval = 10  # sec
     next_msg_time = time.monotonic() + msg_interval
     try:
         while True:
             now = time.monotonic()
             delay = max(0, next_msg_time - now) 
             await asyncio.sleep(delay)
+            message = f"H:{now}"
 
-            # Send heartbeat message
             devices = await read_json_file('devices.json')
             tasks = []
-            # message = f"H:{now}_{next_msg_time}_{delay}"
-            message = f"H:{now}"
-            await send_custom_timestamp_message(message)
+            tasks.append(send_custom_timestamp_message(message))
+
+            # Prepare messages
             for device_data in devices:
                 if device_data.available:
                     tasks.append(send_message_to_device(device_data, message))
 
-            # Calculate the next message time
+            try:
+                # Wait for tasks with a timeout
+                await asyncio.wait_for(asyncio.gather(*tasks, return_exceptions=True), timeout=30)
+            except asyncio.TimeoutError:
+                logger.error("Timeout occurred while sending messages to devices. Tasks were cancelled.")
+                # Cancel and safely handle the tasks
+                for task in tasks:
+                    if not await task.done():
+                        task.cancel()
+                        try:
+                            await task
+                        except asyncio.CancelledError:
+                            logger.info("A task was cancelled during timeout handling.")
+                    # Calculate the next message time
             next_msg_time += msg_interval
 
     except asyncio.CancelledError:
@@ -138,6 +151,7 @@ async def create_test_outlet(request: OutletCreateRequest):
     print(f"Creating {request.number} test outlets.")
     try:
         lsl_manager.create_test_outlet(request.number)
+        lsl_manager.send_message(f"created {request.number} test stream")
         return {"message": f"{request.number} test outlets created."}
     except Exception as e:
         logger.error(f"Failed to create test outlets: {e}")
@@ -301,9 +315,9 @@ async def update_device_in_json(device_data: DeviceModel):
 #         logger.error(f"[API] Failed to get LSL streams: {e}")
 #         raise HTTPException(status_code=500, detail="Failed to get LSL streams.")
 
-# async def send_custom_timestamp_message(message: str):
-#     """Send a custom message to the LSL timestamp stream."""
-#     lsl_manager.send_message(message)
+async def send_custom_timestamp_message(message: str):
+    """Send a custom message to the LSL timestamp stream."""
+    lsl_manager.send_message(message)
 
 
 # Run the app using uvicorn

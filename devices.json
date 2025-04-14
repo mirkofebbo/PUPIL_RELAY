@@ -1,17 +1,31 @@
 [
     {
-        "ip": "192.168.0.2",
+        "ip": "192.168.0.73",
         "port": 8080,
-        "name": "G",
-        "device_id": "G",
-        "available": false,
-        "battery_level": 65,
-        "glasses_serial": "uv6xe",
-        "world_camera_serial": "fq2tc",
-        "connected": false,
+        "name": "E",
+        "device_id": "E",
+        "available": true,
+        "battery_level": 31,
+        "glasses_serial": "unknown",
+        "world_camera_serial": "default",
+        "connected": true,
         "lsl_streaming": false,
         "recording": false,
-        "error_message": "Cannot connect to host 192.168.0.2:8080 ssl:default [Connect call failed ('192.168.0.2', 8080)]"
+        "error_message": ""
+    },
+    {
+        "ip": "192.168.0.62",
+        "port": 8080,
+        "name": "D",
+        "device_id": "D",
+        "available": false,
+        "battery_level": 56,
+        "glasses_serial": "ecxzy",
+        "world_camera_serial": "pfh69",
+        "connected": false,
+        "lsl_streaming": false,
+        "recording": true,
+        "error_message": "Connection timeout to host http://192.168.0.62:8080/api/status"
     },
     {
         "ip": "192.168.0.62",
@@ -19,40 +33,12 @@
         "name": "O",
         "device_id": "O",
         "available": false,
-        "battery_level": 90,
-        "glasses_serial": "unknown",
-        "world_camera_serial": "unknown",
+        "battery_level": 56,
+        "glasses_serial": "ecxzy",
+        "world_camera_serial": "pfh69",
         "connected": false,
         "lsl_streaming": false,
         "recording": false,
-        "error_message": "Cannot connect to host 192.168.0.62:8080 ssl:default [Connect call failed ('192.168.0.62', 8080)]"
-    },
-    {
-        "ip": "192.168.0.73",
-        "port": 8080,
-        "name": "E",
-        "device_id": "E",
-        "available": false,
-        "battery_level": 62,
-        "glasses_serial": "7atkh",
-        "world_camera_serial": "deh53",
-        "connected": false,
-        "lsl_streaming": false,
-        "recording": false,
-        "error_message": "Cannot connect to host 192.168.0.73:8080 ssl:default [Connect call failed ('192.168.0.73', 8080)]"
-    },
-    {
-        "ip": "192.168.0.166",
-        "port": 8080,
-        "name": "J",
-        "device_id": "J",
-        "available": false,
-        "battery_level": 74,
-        "glasses_serial": "pgvyt",
-        "world_camera_serial": "f85cv",
-        "connected": false,
-        "lsl_streaming": false,
-        "recording": false,
-        "error_message": "Cannot connect to host 192.168.0.166:8080 ssl:default [Connect call failed ('192.168.0.166', 8080)]"
+        "error_message": "Connection timeout to host http://192.168.0.62:8080/api/status"
     }
 ]

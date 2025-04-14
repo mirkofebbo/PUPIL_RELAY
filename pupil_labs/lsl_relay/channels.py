@@ -18,10 +18,9 @@ class CompanionChannel:
         self.sample_query = sample_query
         self.information_dict = channel_information_dict
 
-    def append_to(self, channels: pylsl.XMLElement):
-        chan = channels.append_child("channel")
-        for entry in self.information_dict:
-            chan.append_child_value(entry, self.information_dict[entry])
+    def append_to(self, stream_info: pylsl.StreamInfo) -> None:
+        for key, value in self.information_dict.items():
+            stream_info.desc().append_child("channel").append_child_value(key, value)
 
 
 def companion_event_channels():
